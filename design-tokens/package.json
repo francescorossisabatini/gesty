@@ -1,0 +1,17 @@
+{
+  "name": "gesty-design-tokens",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Design token pipeline per Gesty — Style Dictionary trasforma i token sorgente (derivati dall'oggetto T) in CSS variables, JS/TS e SCSS.",
+  "type": "module",
+  "scripts": {
+    "build": "style-dictionary build",
+    "snapshot": "node scripts/changelog.mjs --snapshot",
+    "changelog": "node scripts/changelog.mjs",
+    "sync": "node scripts/changelog.mjs && style-dictionary build",
+    "clean": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "style-dictionary": "^4.3.0"
+  }
+}

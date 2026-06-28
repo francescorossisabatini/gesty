@@ -1,0 +1,25 @@
+# dipendenze
+node_modules/
+design-tokens/node_modules/
+
+# build / output generati
+dist/
+storybook-static/
+design-tokens/build/
+
+# Tauri / Rust (binari pesanti)
+src-tauri/target/
+src-tauri/gen/
+
+# log e cache
+*.log
+npm-debug.log*
+.vite/
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

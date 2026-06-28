@@ -1,0 +1,59 @@
+{
+  "entries": [
+    {
+      "date": "2026-06-28",
+      "generatedAt": "2026-06-28T08:31:29.058Z",
+      "baseline": false,
+      "summary": {
+        "added": 0,
+        "removed": 0,
+        "changed": 8
+      },
+      "added": [],
+      "removed": [],
+      "changed": [
+        {
+          "token": "color.background.page",
+          "from": "#F7F8F9",
+          "to": "#F6F8FA"
+        },
+        {
+          "token": "color.foreground.primary",
+          "from": "#1A2733",
+          "to": "#262E36"
+        },
+        {
+          "token": "color.accent.brand",
+          "from": "#1F8A70",
+          "to": "#1F8C84"
+        },
+        {
+          "token": "color.accent.success",
+          "from": "#2E7D5B",
+          "to": "#2F8F4E"
+        },
+        {
+          "token": "color.accent.category-dining",
+          "from": "#C25A4E",
+          "to": "#C2611E"
+        },
+        {
+          "token": "radius.small",
+          "from": "6px",
+          "to": "4px"
+        },
+        {
+          "token": "radius.medium",
+          "from": "10px",
+          "to": "8px"
+        },
+        {
+          "token": "radius.large",
+          "from": "14px",
+          "to": "12px"
+        }
+      ]
+    }
+  ],
+  "generated": "2026-06-28T08:31:29.058Z"
+}
