@@ -23,3 +23,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# documenti di design interni (repo pubblico: esclusi)
+context/
+CLAUDE.md
