@@ -8,7 +8,6 @@ const config = {
   ],
   "addons": [
     "@storybook/addon-essentials",
-    "@storybook/addon-onboarding",
     "@storybook/addon-interactions"
   ],
   "framework": {
