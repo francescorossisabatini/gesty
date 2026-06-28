@@ -27,3 +27,11 @@ Thumbs.db
 # documenti di design interni (repo pubblico: esclusi)
 context/
 CLAUDE.md
+
+# Repo pubblico = SOLO design system + Storybook. L'app Gesty resta in locale.
+/index.html
+/sample/
+/src-tauri/
+/src/*
+!/src/tokens.jsx
+!/src/stories/
