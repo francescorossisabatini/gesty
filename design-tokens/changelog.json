@@ -1,6 +1,25 @@
 {
   "entries": [
     {
+      "date": "2026-07-15",
+      "generatedAt": "2026-07-15T09:48:19.343Z",
+      "baseline": false,
+      "summary": {
+        "added": 0,
+        "removed": 0,
+        "changed": 1
+      },
+      "added": [],
+      "removed": [],
+      "changed": [
+        {
+          "token": "color.foreground.tertiary",
+          "from": "#6B7884",
+          "to": "#5A6773"
+        }
+      ]
+    },
+    {
       "date": "2026-06-28",
       "generatedAt": "2026-06-28T08:31:29.058Z",
       "baseline": false,
@@ -55,5 +74,5 @@
       ]
     }
   ],
-  "generated": "2026-06-28T08:31:29.058Z"
+  "generated": "2026-07-15T09:48:19.343Z"
 }

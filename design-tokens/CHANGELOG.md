@@ -2,6 +2,12 @@
 
 Generato da `npm run changelog` confrontando `tokens.json` con lo snapshot precedente.
 
+## 2026-07-15
+_0 aggiunti · 0 rimossi · 1 modificati_
+
+### Modificati
+- `color.foreground.tertiary`: #6B7884 → #5A6773
+
 ## 2026-06-28
 _0 aggiunti · 0 rimossi · 8 modificati_
 

@@ -19,7 +19,7 @@
   "color.background.disabled": "Fill for disabled controls and surfaces. Pair with foreground/disabled.",
   "color.foreground.primary": "Primary text — transaction descriptions, amounts, body copy, headings. 13.6:1 on background/card (AAA). The default text colour.",
   "color.foreground.secondary": "Secondary text — supporting labels, column headers, captions that still need to read clearly. 7.9:1 on card (AAA).",
-  "color.foreground.tertiary": "Tertiary text — axis labels, metadata, timestamps, helper text. 5.3:1 on card, passes AA for small text. Use sparingly in dense areas.",
+  "color.foreground.tertiary": "Tertiary text — axis labels, metadata, timestamps, helper text. 5.1:1 on alt-row, 5.4:1 on page, 5.8:1 on card — passes AA everywhere it appears (darkened from #6B7884 after an audit found 4.0:1 on alt-row, below AA). Use sparingly in dense areas.",
   "color.foreground.disabled": "Disabled text and icons only. ~2.7:1 — below AA by design, exempt as disabled UI. Never use for active content.",
   "color.foreground.on-action": "Label text on the primary button (background/action). White on teal/600 = 6.2:1 (AA). Pair only with background/action and -hover/-pressed.",
   "color.foreground.on-brand": "Text/icons on solid brand fill (background/brand). Pair with background/brand.",
