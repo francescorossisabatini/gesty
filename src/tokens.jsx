@@ -125,17 +125,20 @@ export function Sidebar({ active, enabled, onNavigate, flowLabel }){
     const on = isOn(id);
     const cur = active === id;
     return (
-      <div key={id}
+      <button key={id} type="button"
         onClick={on ? ()=>onNavigate(id) : undefined}
+        aria-disabled={!on}
+        aria-current={cur ? "page" : undefined}
         title={on ? "" : `Non in questo flusso (${flowLabel})`}
         style={{ display:"flex", alignItems:"center", gap:sp(3), padding:`10px ${sp(3)}px`,
           borderRadius:T.r.md, cursor:on?"pointer":"not-allowed",
           background: cur ? `${T.brand}14` : "transparent",
           color: on ? (cur?T.brand:T.fg2) : T.fgDis,
           fontWeight: cur?600:500, fontSize:14, opacity:on?1:0.55,
+          border:"none", width:"100%", textAlign:"left", fontFamily:T.font,
           transition:"background .15s, color .15s" }}>
         <span style={{ color: on ? (cur?T.brand:T.fg3) : T.fgDis, display:"flex" }}><Icon/></span>{label}
-      </div>
+      </button>
     );
   };
   return (
