@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import figma from "../design-tokens/tokens.json";
 
@@ -24,6 +24,7 @@ export const T = {
   borderHover: c.border.default.value,
   focus: c.border.focus.value,
   brand: c.accent.brand.value,
+  brandFg: c.foreground.brand.value,
   brandSubtle: c.background["brand-subtle"].value,
   estimate: c.accent.estimate.value,
   warning: c.accent.warning.value,
@@ -48,7 +49,12 @@ export const T = {
 export const M = {
   dur:{ instant:.1, fast:.15, base:.2, moderate:.26, slow:.4 },
   ease:{ out:[0.4,0,0.2,1], in:[0.4,0,1,1], decelerate:[0.22,0.8,0.2,1] },
+  // uscita = 60–70% dell'entrata, con ease.in (08-motion-spec.md §1).
+  // xdur(d) restituisce ~65% della durata d'entrata; usare con ease:M.ease.in.
+  xdur:(d)=> Math.round(d*0.65*1000)/1000,
 };
+// transizione d'uscita pronta all'uso: exitTr(M.dur.base) → { duration:.13, ease:in }
+export const exitTr = (enterDur=M.dur.base) => ({ duration:M.xdur(enterDur), ease:M.ease.in });
 
 export const sp=(n)=>({1:4,2:8,3:12,4:16,5:20,6:24,8:32,10:40}[n]||n);
 
@@ -105,6 +111,22 @@ export const CatIco = {
   other:(p)=><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" {...p}><circle cx="5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15" cy="10" r="1.3"/></svg>,
 };
 
+/* Segno G — "Gesty Logo" (Figma 80:2540, Type=mark). Geometria vettoriale
+   reale estratta dal file (cerchio aperto + taglio squadrato = "punto fermo"),
+   NON un placeholder testuale. Path nativo in box locale 14×14 @ (5,5) dentro
+   un frame 24×24, tradotto qui in viewBox 0 0 24 24. Stroke accent/brand,
+   cap/join squadrati (mai arrotondati — coerente col taglio netto del segno).
+   Il punto è un quadratino quasi vivo (radius .4) in foreground/brand. */
+export function GMark({ size=24 }){
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5 C15.866 5 19 8.134 19 12 C19 15.866 15.866 19 12 19 C8.134 19 5 15.866 5 12 C5 10.522 5.468 9.081 6.337 7.886 L12.35 12"
+        stroke={T.brand} strokeWidth="2.2" strokeLinecap="square" strokeLinejoin="miter"/>
+      <rect x="15.1" y="4.95" width="2.2" height="2.2" rx="0.4" fill={T.brandFg}/>
+    </svg>
+  );
+}
+
 // le voci della sidebar (id, label, icona)
 export const NAV_ITEMS = [
   ["overview","Overview","layout"],["spending","Spending","receipt"],
@@ -113,48 +135,99 @@ export const NAV_ITEMS = [
   ["import","Import","upload"],
 ];
 
-/* Sidebar riusabile.
-   - active: id schermata corrente
-   - enabled: Set di id navigabili (gating del flusso)
-   - onNavigate: (id) => void
-   - flowLabel: testo tooltip per le voci disattivate */
-export function Sidebar({ active, enabled, onNavigate, flowLabel }){
-  const isOn = (id) => enabled.has(id);
-  const Item = ({ id, label, ico, isSettings }) => {
-    const Icon = NavIco[ico];
-    const on = isOn(id);
-    const cur = active === id;
-    return (
-      <button key={id} type="button"
-        onClick={on ? ()=>onNavigate(id) : undefined}
-        aria-disabled={!on}
-        aria-current={cur ? "page" : undefined}
-        title={on ? "" : `Non in questo flusso (${flowLabel})`}
-        style={{ display:"flex", alignItems:"center", gap:sp(3), padding:`10px ${sp(3)}px`,
-          borderRadius:T.r.md, cursor:on?"pointer":"not-allowed",
-          background: cur ? `${T.brand}14` : "transparent",
-          color: on ? (cur?T.brand:T.fg2) : T.fgDis,
-          fontWeight: cur?600:500, fontSize:14, opacity:on?1:0.55,
-          border:"none", width:"100%", textAlign:"left", fontFamily:T.font,
-          transition:"background .15s, color .15s" }}>
-        <span style={{ color: on ? (cur?T.brand:T.fg3) : T.fgDis, display:"flex" }}><Icon/></span>{label}
-      </button>
-    );
-  };
+/* Sidebar collassabile (Dev Notes Sidebar 81:2620 + 08-motion-spec.md §3).
+   - A riposo STRETTA (72px): solo icone + segno G. Si espande (232px) per
+     PROSSIMITÀ (hover) o FOCUS da tastiera; si richiude quando né mouse né
+     focus sono sopra. È un overlay: NON fa reflow del contenuto (il binario
+     resta 72px in flusso, il pannello galleggia sopra da espanso).
+   - Logo: la G non si muove mai; "esty" entra in fade+slide (base·out).
+   - Label nav: fade + slide da sinistra, stagger ≤20ms (moderate·out).
+   - Voci gated (disabilitate): non focusabili (tabIndex -1) + aria-disabled.
+   - reduced-motion: larghezza istantanea, label/esty senza slide né stagger.
+   props: active · enabled(Set) · onNavigate(id) · flowLabel(tooltip gated) */
+const RAIL = 72, OPEN = 232;
+
+// Voce di nav — componente STABILE a livello di modulo (non ridefinito a ogni
+// render di Sidebar). Prima viveva come funzione interna a Sidebar: React la
+// trattava come un tipo-componente "nuovo" a ogni render (identity check sulla
+// funzione fallisce), smontando e rimontando TUTTI i bottoni a ogni cambio di
+// hover/focus — se il rimontaggio cadeva tra mousedown e mouseup del primo
+// click (quasi garantito, è l'hover stesso a scatenarlo), il click si perdeva
+// nel vuoto e serviva un secondo tentativo su bottoni ormai stabili.
+function SidebarItem({ id, label, ico, idx, on, cur, expanded, reduce, onNavigate, flowLabel }){
+  const Icon = NavIco[ico];
+  const labelTr = { duration: reduce?0:M.dur.moderate, ease:M.ease.out,
+    delay: (reduce||!expanded) ? 0 : idx*0.02 };
   return (
-    <aside style={{ width:256, flexShrink:0, background:T.surface, borderRight:`1px solid ${T.border}`,
-      padding:`${sp(5)}px ${sp(4)}px`, display:"flex", flexDirection:"column", gap:4,
-      height:"100vh", position:"sticky", top:0 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:6, padding:`${sp(2)}px ${sp(3)}px`, marginBottom:sp(4) }}>
-        <div style={{ width:24, height:24, borderRadius:T.r.sm, background:T.brand, color:T.onBrand,
-          display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:15 }}>G</div>
-        <span style={{ fontWeight:700, fontSize:18, letterSpacing:"-0.01em" }}>esty</span>
-      </div>
-      {NAV_ITEMS.map(([id,label,ico])=> <Item key={id} id={id} label={label} ico={ico}/>)}
-      <div style={{ flex:1 }}/>
-      <div style={{ height:1, background:T.border, margin:`${sp(2)}px 0` }}/>
-      <Item id="settings" label="Settings" ico="settings" isSettings/>
-    </aside>
+    <button type="button"
+      onClick={on ? (e)=>{ onNavigate(id); e.currentTarget.blur(); } : undefined}
+      tabIndex={on ? 0 : -1}
+      aria-disabled={!on}
+      aria-current={cur ? "page" : undefined}
+      title={on ? label : `Non in questo flusso (${flowLabel})`}
+      style={{ display:"flex", alignItems:"center", gap:sp(3), padding:`10px ${sp(3)}px`,
+        borderRadius:T.r.md, cursor:on?"pointer":"not-allowed",
+        background: cur ? `${T.brand}14` : "transparent",
+        color: on ? (cur?T.brand:T.fg2) : T.fgDis,
+        fontWeight: cur?600:500, fontSize:14, opacity:on?1:0.55,
+        border:"none", width:OPEN-2*sp(4), textAlign:"left", fontFamily:T.font,
+        whiteSpace:"nowrap", flexShrink:0,
+        transition:"background .15s, color .15s" }}>
+      <span style={{ color: on ? (cur?T.brand:T.fg3) : T.fgDis, display:"flex", flexShrink:0 }}><Icon/></span>
+      <motion.span animate={{ opacity: expanded?1:0, x: (expanded||reduce)?0:-6 }}
+        transition={labelTr} style={{ display:"inline-block" }}>{label}</motion.span>
+    </button>
+  );
+}
+
+export function Sidebar({ active, enabled, onNavigate, flowLabel }){
+  const reduce = useReducedMotion();
+  const [hover,setHover] = useState(false);
+  const [focus,setFocus] = useState(false);
+  const expanded = hover || focus;
+  const isOn = (id) => enabled.has(id);
+
+  const onBlurCapture = useCallback((e)=>{
+    if(!e.currentTarget.contains(e.relatedTarget)) setFocus(false);
+  },[]);
+
+  // transizioni derivate dai token motion. Larghezza: ASIMMETRICA — l'apertura
+  // (Dev Notes: 400ms·decelerate) era troppo lenta per stare al passo col mouse
+  // reale, ma la vera causa del "doppio click" era il remount di SidebarItem
+  // sopra, non questa durata — tenuta comunque più rapida in apertura perché
+  // resta comunque la scelta più reattiva.
+  const widthTr = { duration: reduce?0:(expanded?M.dur.fast:M.dur.base), ease: expanded?M.ease.out:M.ease.decelerate };
+  const estyTr  = { duration: reduce?0:M.dur.base, ease: M.ease.out };
+
+  return (
+    <div style={{ width:RAIL, flexShrink:0, height:"100vh", position:"sticky", top:0, zIndex:30 }}>
+      <motion.aside
+        onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
+        onFocusCapture={()=>setFocus(true)} onBlurCapture={onBlurCapture}
+        initial={false} animate={{ width: expanded?OPEN:RAIL }} transition={widthTr}
+        style={{ position:"absolute", top:0, left:0, height:"100vh", overflow:"hidden",
+          background:T.surface, borderRight:`1px solid ${T.border}`,
+          boxShadow: expanded?EL.pop:"none",
+          padding:`${sp(5)}px ${sp(4)}px`, display:"flex", flexDirection:"column", gap:4,
+          boxSizing:"border-box" }}>
+        <div style={{ display:"flex", alignItems:"center", padding:`${sp(2)}px ${sp(3)}px`, marginBottom:sp(4) }}>
+          <div style={{ flexShrink:0 }}><GMark/></div>
+          <motion.span animate={{ opacity: expanded?1:0, x:(expanded||reduce)?0:-6 }} transition={estyTr}
+            style={{ fontWeight:500, fontSize:18, letterSpacing:"-0.01em", whiteSpace:"nowrap",
+              color:T.brandFg, marginLeft:-3 }}>esty</motion.span>
+        </div>
+        {NAV_ITEMS.map(([id,label,ico],i)=> (
+          <SidebarItem key={id} id={id} label={label} ico={ico} idx={i}
+            on={isOn(id)} cur={active===id} expanded={expanded} reduce={reduce}
+            onNavigate={onNavigate} flowLabel={flowLabel}/>
+        ))}
+        <div style={{ flex:1 }}/>
+        <div style={{ height:1, background:T.border, margin:`${sp(2)}px 0` }}/>
+        <SidebarItem id="settings" label="Settings" ico="settings" idx={NAV_ITEMS.length}
+          on={isOn("settings")} cur={active==="settings"} expanded={expanded} reduce={reduce}
+          onNavigate={onNavigate} flowLabel={flowLabel}/>
+      </motion.aside>
+    </div>
   );
 }
 
